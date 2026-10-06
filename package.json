@@ -2,19 +2,29 @@
   "name": "arc-x402-door",
   "version": "0.1.0",
   "private": true,
-  "description": "HTTP paid door: unpaid \u2192 HTTP 402 (x402) via Circle Facilitator Service on Arc Mainnet; paid \u2192 JSON evidence that settlement \u2260 purpose/agent-authority verification.",
+  "description": "HTTP paid door: unpaid → HTTP 402 (x402 v2) for USDC on Arc Mainnet via Circle Facilitator Service; paid → JSON evidence that settlement ≠ purpose/agent-authority verification.",
   "license": "MIT",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
+    "dev": "next dev",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "smoke": "tsx scripts/smoke-pay.ts",
+    "smoke:preflight": "tsx scripts/smoke-pay.ts --preflight",
+    "smoke:live": "tsx scripts/smoke-pay.ts --live",
+    "self-settle": "tsx scripts/self-settle.ts",
+    "self-settle:live": "tsx scripts/self-settle.ts --live"
   },
   "engines": {
     "node": ">=20.19.0"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@x402/core": "^2.26.0",
     "@x402/evm": "^2.26.0",
     "next": "^15.5.2",
@@ -26,6 +36,8 @@
     "@types/node": "^22.18.1",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
-    "typescript": "^5.9.2"
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.134.0"
   }
 }

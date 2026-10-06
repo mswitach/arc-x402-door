@@ -23,11 +23,14 @@ export default function HomePage() {
           fontSize: 13,
         }}
       >
-        {`curl -i http://localhost:3000/api/paid`}
+        {`curl -i https://arc-x402-door.mswitach.workers.dev/api/paid   # → 402
+npx tsx scripts/smoke-pay.ts                                  # buyer dry run (sign only)`}
       </pre>
       <p style={{ color: "#94a3b8", fontSize: 14 }}>
-        See README.md and EVIDENCE.md. Out of scope: Mandato AR, Base Sepolia,
-        wallet funding, X publish, live spend.
+        Source, evidence and smoke scripts:{" "}
+        <a href="https://github.com/mswitach/arc-x402-door" style={{ color: "#7dd3fc" }}>
+          github.com/mswitach/arc-x402-door
+        </a>
       </p>
     </main>
   );

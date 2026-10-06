@@ -1,0 +1,92 @@
+{
+  "takenAtART": "2026-10-06T10:22:40-03:00",
+  "request": "GET https://api.circle.com/v1/facilitator/x402/supported",
+  "httpStatus": 200,
+  "arcMainnetKind": {
+    "x402Version": 2,
+    "scheme": "exact",
+    "network": "eip155:5042",
+    "asset": "0x3600000000000000000000000000000000000000",
+    "decimals": 6,
+    "extra": {
+      "name": "USDC",
+      "version": "2"
+    }
+  },
+  "fullResponse": {
+    "x402Version": 2,
+    "kinds": [
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:5042",
+        "asset": "0x3600000000000000000000000000000000000000",
+        "decimals": 6,
+        "extra": {
+          "name": "USDC",
+          "version": "2"
+        }
+      },
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:5042002",
+        "asset": "0x3600000000000000000000000000000000000000",
+        "decimals": 6,
+        "extra": {
+          "name": "USDC",
+          "version": "2"
+        }
+      },
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "decimals": 6,
+        "extra": {
+          "name": "USD Coin",
+          "version": "2"
+        }
+      },
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:84532",
+        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "decimals": 6,
+        "extra": {
+          "name": "USDC",
+          "version": "2"
+        }
+      },
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:137",
+        "asset": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+        "decimals": 6,
+        "extra": {
+          "name": "USD Coin",
+          "version": "2"
+        }
+      },
+      {
+        "x402Version": 2,
+        "scheme": "exact",
+        "network": "eip155:80002",
+        "asset": "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+        "decimals": 6,
+        "extra": {
+          "name": "USDC",
+          "version": "2"
+        }
+      }
+    ],
+    "extensions": [
+      "payment-identifier",
+      "settlement-status"
+    ],
+    "signers": {}
+  }
+}

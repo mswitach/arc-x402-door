@@ -15,9 +15,15 @@ export type SettlementEvidence = {
   scheme: string;
   facilitator: string;
   facilitatorUrl: string;
-  /** Placeholder until a real smoke settle returns a hash. */
+  /** Real tx hash returned by Facilitator /settle (null in demo mode). */
   transactionHash: string | null;
+  /** Arc explorer link for transactionHash (null in demo mode). */
+  explorerLink: string | null;
   payer: string | null;
+  /** Auth mode used against the facilitator ("api-key" | "seller-proof" | null in demo). */
+  facilitatorAuth: string | null;
+  /** /verify result before settle (isValid + payer). */
+  verify: { isValid: boolean; payer: string | null } | null;
   amountAtomic: string;
   asset: string;
   payTo: string;
@@ -51,7 +57,10 @@ export function buildEvidencePayload(args: {
   asset: string;
   payTo: string;
   transactionHash?: string | null;
+  explorerLink?: string | null;
   payer?: string | null;
+  facilitatorAuth?: string | null;
+  verify?: { isValid: boolean; payer: string | null } | null;
   demo?: boolean;
 }): PaidEvidenceResponse {
   const now = new Date();
@@ -78,16 +87,19 @@ export function buildEvidencePayload(args: {
       facilitator: "Circle hosted Facilitator Service",
       facilitatorUrl: args.facilitatorUrl,
       transactionHash: args.transactionHash ?? null,
+      explorerLink: args.explorerLink ?? null,
       payer: args.payer ?? null,
+      facilitatorAuth: args.facilitatorAuth ?? null,
+      verify: args.verify ?? null,
       amountAtomic: args.amountAtomic,
       asset: args.asset,
       payTo: args.payTo,
       settledAt: args.demo ? null : args.transactionHash ? now.toISOString() : null,
       note: args.demo
-        ? "Demo paid JSON shape only — no on-chain settle. Set CIRCLE_API_KEY + real PAYMENT-SIGNATURE for smoke."
+        ? "DEMO ONLY (ALLOW_DEMO_PAID=true): paid JSON shape without any on-chain settle. Not evidence of payment."
         : args.transactionHash
-          ? "Settlement returned by Circle Facilitator Service. Settlement ≠ purpose/authority verification."
-          : "Placeholder — wire CIRCLE_API_KEY (or seller proof) and retry with a valid x402 PAYMENT-SIGNATURE.",
+          ? "USDC moved on Arc: Circle Facilitator Service verified the buyer's EIP-3009 signature and settled it. Nothing in this flow checked why the buyer paid or whether the signing agent was authorized to. Settlement ≠ consent."
+          : "No transaction hash returned by the facilitator.",
     },
     meta: {
       endpoint: "/api/paid",

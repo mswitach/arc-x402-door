@@ -1,125 +1,111 @@
 # arc-x402-door
 
-Tiny Next.js (App Router) **HTTP paid door** for Marcelo’s Arc Microgrant.
+A paid HTTP door on **Arc Mainnet**. Pay 0.01 USDC over **x402**, get back a JSON receipt that
+proves a point most agent-payment demos skip: **settlement is not consent**.
 
-| Request | Result |
-|--------|--------|
-| No valid payment | **HTTP 402** + x402 `accepts` for **USDC on Arc Mainnet** via **Circle hosted Facilitator Service** |
-| After facilitator settle | **200 JSON** evidence that **settle ≠ consent / purpose / agent authority** |
+| Request to `/api/paid` | Result |
+|---|---|
+| No payment | **HTTP 402** + x402 v2 `PAYMENT-REQUIRED` for USDC on Arc Mainnet |
+| Valid `PAYMENT-SIGNATURE` | Circle Facilitator Service **verifies + settles** on Arc → **200** evidence JSON with tx hash + explorer link |
 
-> Circle Facilitator Service verifies EIP-3009 authorizations only. It does **not** verify transaction purpose or confirm agent authority scope. Arc settlements are final.
+Live: https://arc-x402-door.mswitach.workers.dev/api/paid
 
-## Stack
+## Why: settle ≠ consent
 
-- **Next.js 15** App Router → simplest deploy on **Vercel**
-- **`@x402/core` `HTTPFacilitatorClient`** patterns + direct `POST /settle`
-- **Circle Facilitator Service**: `https://api.circle.com/v1/facilitator/x402`
+Circle and Arc are pushing hard on agents paying in USDC (Circle's
+[Agent Stack](https://developers.circle.com/agent-stack), the hosted x402 Facilitator Service, and the
+agent-payment items in the Arc Weekly Recap). Settlement keeps getting easier. But Circle's own
+Facilitator Service docs are explicit:
 
-Confirmed live (no auth):
+> Facilitator Service verifies buyer-signed EIP-3009 USDC payment authorizations under the x402
+> protocol only — it does not hold, control, or transmit user funds, verify transaction purpose, or
+> confirm agent authority scope. […] Arc settlements are final.
+> — https://developers.circle.com/facilitator-service
 
-```bash
-curl -s https://api.circle.com/v1/facilitator/x402/supported | jq '.kinds[] | select(.network=="eip155:5042")'
-```
+So when an agent pays, a valid signature + a final settle on Arc tell you **the money moved**. They
+do not tell you **why** it moved or whether the agent **was allowed to** sign that deal. That check is a
+separate layer. This door makes the gap concrete: the thing you buy is the evidence of the gap,
+delivered over the very rail that has it.
 
-| Field | Arc Mainnet |
-|-------|-------------|
-| CAIP-2 | `eip155:5042` |
-| USDC | `0x3600000000000000000000000000000000000000` |
-| Scheme | `exact` / EIP-3009 |
-| Facilitator | Circle hosted |
+## What Arc is used for
 
-Docs:
+- **USDC settlement on Arc Mainnet** (`eip155:5042`): the buyer's EIP-3009 `TransferWithAuthorization`
+  moves 0.01 USDC (`10000` atomic, ERC-20 interface at `0x3600…0000`, 6 decimals) to the seller.
+- **Gas in USDC**: Arc's native gas token is USDC, so the whole flow (and the Plan B self-settle) is
+  priced in dollars. No second token.
+- **Sub-second, deterministic finality**: "Arc settlements are final", so the door can fulfill as soon as
+  the facilitator returns a tx hash. No confirmation wait, no reorg risk.
+- **Circle Facilitator Service** settles on Arc through a Circle relayer, so the buyer needs only USDC.
 
-- https://developers.circle.com/facilitator-service
-- https://developers.circle.com/facilitator-service/quickstart
-- https://developers.circle.com/facilitator-service/supported-networks
+## How it works
 
-## Quick start (local)
+1. `GET /api/paid` → **402**, `PAYMENT-REQUIRED` (base64 JSON, x402 v2):
+   `scheme exact`, `network eip155:5042`, `asset 0x3600…`, `amount 10000`,
+   `extra { name: "USDC", version: "2", assetTransferMethod: "eip3009" }`, `payTo` from env.
+   These match Circle's `GET /supported` for Arc Mainnet field by field
+   ([snapshot](evidence/facilitator-supported-2026-10-06.json)).
+2. Buyer signs EIP-3009 against the USDC EIP-712 domain (`USDC` / `2` / chain 5042) and retries with
+   `PAYMENT-SIGNATURE`.
+3. Door checks the buyer's `accepted` terms equal what it advertised, then calls Circle
+   `POST /verify` and `POST /settle` (auth: `Authorization: Bearer CIRCLE_API_KEY`, or the keyless-trial
+   `Facilitator-Seller-Proof` signed by the `payTo` key).
+4. On terminal success → **200** evidence JSON (`claim`, sourced `evidence[]`, `settlement.transactionHash`,
+   `settlement.explorerLink`) + `PAYMENT-RESPONSE`. Pending → 202 (not fulfilled). Failure → 402.
 
-```bash
-cd arc-x402-door
-cp .env.example .env.local
-# set PAY_TO=0xYourSellerAddress
-# optional: CIRCLE_API_KEY=... for real settle
-npm install
-npm run dev
-```
+Code: [`app/api/paid/route.ts`](app/api/paid/route.ts) · [`lib/config.ts`](lib/config.ts) ·
+[`lib/circle-facilitator.ts`](lib/circle-facilitator.ts) · [`lib/evidence.ts`](lib/evidence.ts)
 
-Unpaid (expect **402**):
-
-```bash
-curl -i http://localhost:3000/api/paid
-```
-
-Demo paid JSON shape (no live spend — DoraHacks screenshots only):
-
-```bash
-# in .env.local
-ALLOW_DEMO_PAID=true
-
-curl -i -H 'X-Arc-Door-Demo: paid' http://localhost:3000/api/paid
-```
-
-Build:
+## Run
 
 ```bash
-npm run build
-npm start
+npm ci
+cp .env.example .env.local   # set PAY_TO and ONE of CIRCLE_API_KEY / SELLER_PRIVATE_KEY
+npm run dev                  # or: npm run build && npm start
+curl -i http://localhost:3000/api/paid          # → 402
 ```
 
-`npm run build` does **not** require env vars (PAY_TO falls back to a placeholder address for static analysis). Set real `PAY_TO` before any smoke settle.
+Env (see [`.env.example`](.env.example)):
 
-## Paid flow (wired)
+| Var | Purpose |
+|---|---|
+| `PAY_TO` | seller address. Unset → 402 shows a placeholder and the door refuses to settle |
+| `CIRCLE_API_KEY` | Circle Console key (`LIVE_API_KEY:…` for mainnet) → Bearer auth |
+| `SELLER_PRIVATE_KEY` | alternative: keyless trial, signs `Facilitator-Seller-Proof` (must control `PAY_TO`) |
+| `ALLOW_DEMO_PAID` | `true` → `X-Arc-Door-Demo: paid` returns the paid JSON shape with no settle (screenshots only). **Must be `false` for the real smoke** |
+| `SETTLE_DISABLED` | `true` → run `/verify` only, never `/settle` (rehearsal) |
+| `PRICE_USDC` / `NETWORK` / `FACILITATOR_URL` | `0.01` / `arc-mainnet` / Circle hosted base |
 
-1. Buyer hits `GET|POST /api/paid` → **402** + `PAYMENT-REQUIRED` (base64 JSON).
-2. Buyer signs EIP-3009 `TransferWithAuthorization` against Arc USDC and retries with `PAYMENT-SIGNATURE`.
-3. Server `POST`s to `{FACILITATOR_URL}/settle` with `Authorization: Bearer CIRCLE_API_KEY`.
-4. On `success: true`, server returns evidence JSON + `PAYMENT-RESPONSE`.
+Deploy: Cloudflare Workers via OpenNext (`npm run deploy`, see `wrangler.jsonc`). Secrets
+(`CIRCLE_API_KEY` or `SELLER_PRIVATE_KEY`) go in as Workers secrets, never in `vars` or git.
 
-### What’s wired vs stubbed
+## Smoke scripts (buyer side)
 
-| Piece | Status |
-|-------|--------|
-| Real **402** body + `PAYMENT-REQUIRED` header | **Wired** |
-| Arc Mainnet requirements (`eip155:5042`, USDC, exact/EIP-3009) | **Wired** |
-| Facilitator URL default `https://api.circle.com/v1/facilitator/x402` | **Wired** (GET `/supported` verified 200) |
-| `POST /settle` with Bearer `CIRCLE_API_KEY` | **Wired** (needs key + real signature for smoke) |
-| Paid evidence JSON (`claim`, `evidence[]`, `settlement`) | **Wired** |
-| Demo paid JSON (`ALLOW_DEMO_PAID` + header) | **Wired** (no chain) |
-| Keyless trial `Facilitator-Seller-Proof` | **Stub / TODO** — see `lib/circle-facilitator.ts` `buildSellerProof` |
-| `@x402/next` withX402 | Not used — peer needs Next >=16.2.6; route uses explicit settle + `@x402/core` |
+Keys are read at runtime from `BUYER_PRIVATE_KEY` / `SELLER_PRIVATE_KEY` or a wallets JSON at
+`ARC_WALLETS_FILE`. They are never printed or written.
 
-### Exact facilitator endpoints
+```bash
+npm run smoke              # DRY RUN: GET → 402 → check terms → sign EIP-3009 → stop (no spend)
+npm run smoke:preflight    # + Circle POST /verify with seller proof (no payment, no trial usage, nothing onchain)
+npm run smoke:live         # REAL: sends the paid request → 0.01 USDC settles on Arc Mainnet
+```
 
-| Method | URL |
-|--------|-----|
-| GET | `https://api.circle.com/v1/facilitator/x402/supported` |
-| POST | `https://api.circle.com/v1/facilitator/x402/verify` |
-| POST | `https://api.circle.com/v1/facilitator/x402/settle` |
-| GET | `https://api.circle.com/v1/facilitator/x402/status/{paymentId}` |
+`smoke-pay.ts` refuses to send the paid request without `--live`, refuses to sign above
+`--max-atomic` (default 10000 = 0.01 USDC), refuses a placeholder `payTo`, and checks the buyer's USDC
+balance before paying. Live runs save `evidence/smoke-live-<timestamp>.json`.
+`--url http://localhost:3000/api/paid --local-send` rehearses the paid request against a local door.
 
-Auth for verify/settle: `Authorization: Bearer <CIRCLE_API_KEY>` **or** `Facilitator-Seller-Proof` (keyless trial).
+**Plan B** (no facilitator): `npm run self-settle` builds + signs `transferWithAuthorization` and only
+simulates it (`eth_call` + `estimateGas`). `npm run self-settle:live` broadcasts it from the buyer,
+paying gas in USDC (≥ 20 gwei `maxFeePerGas`).
 
-## Env
+## Evidence
 
-See `.env.example`:
+See [EVIDENCE.md](EVIDENCE.md) for the 402/200 captures, tx hash, explorer link, sources with dates,
+and the pre-funding rehearsal log. DoraHacks copy: [docs/DORAHACKS.md](docs/DORAHACKS.md).
 
-- `PAY_TO` — seller address
-- `CIRCLE_API_KEY` — optional until live settle
-- `FACILITATOR_URL` — default Circle hosted x402 base
-- `NETWORK=arc-mainnet`
-- `PRICE_USDC=0.01`
-- `ALLOW_DEMO_PAID=false`
+## Scope
 
-## Out of scope
-
-Mandato AR · Base Sepolia · wallet funding · X publish · live spend
-
-## Deploy (Vercel)
-
-1. Import repo / folder.
-2. Set env: `PAY_TO`, `FACILITATOR_URL`, `NETWORK`, `PRICE_USDC`, optionally `CIRCLE_API_KEY`.
-3. Deploy. Hit `https://<project>.vercel.app/api/paid`.
+Out of scope here: purpose binding / agent-authority policy (that is the point), Base / Base Sepolia.
 
 ## License
 

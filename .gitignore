@@ -25,3 +25,14 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+
+# Directo / OpenNext local env (not committed)
+.env.production

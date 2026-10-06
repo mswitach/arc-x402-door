@@ -1,0 +1,27 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "arc-x402-door",
+	"compatibility_date": "2026-09-17",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "arc-x402-door"
+		}
+	],
+	"vars": {
+		"ALLOW_DEMO_PAID": "true",
+		"PAY_TO": "0x0000000000000000000000000000000000000001",
+		"NETWORK": "arc-mainnet",
+		"FACILITATOR_URL": "https://api.circle.com/v1/facilitator/x402",
+		"PRICE_USDC": "0.01"
+	}
+}

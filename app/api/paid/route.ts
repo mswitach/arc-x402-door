@@ -1,79 +1,111 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  decodePaymentSignatureHeader,
+  encodePaymentRequiredHeader,
+  encodePaymentResponseHeader,
+} from "@x402/core/http";
+import type { PaymentPayload, PaymentRequired } from "@x402/core/types";
+import {
   ARC_USDC,
+  RESOURCE_DESCRIPTION,
+  X402_VERSION,
   buildPaymentRequirements,
   getConfig,
+  txExplorerLink,
+  type AppConfig,
+  type PaymentRequirementsV2,
 } from "@/lib/config";
 import { buildEvidencePayload } from "@/lib/evidence";
-import { settleWithCircle } from "@/lib/circle-facilitator";
+import {
+  assertSellerKeyMatchesPayTo,
+  isSettlePending,
+  resolveFacilitatorAuth,
+  settleWithCircle,
+  verifyWithCircle,
+  type SettleResponse,
+  type VerifyResponse,
+} from "@/lib/circle-facilitator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function paymentRequiredBody(req: NextRequest) {
-  const cfg = getConfig();
-  const requirements = buildPaymentRequirements(cfg);
+const EXPOSE = "PAYMENT-REQUIRED, PAYMENT-RESPONSE";
+
+function paymentRequired(req: NextRequest, cfg: AppConfig, error?: string): PaymentRequired {
   const url = new URL(req.url);
   return {
-    x402Version: 2,
-    error: "Payment required — USDC on Arc via Circle Facilitator Service (EIP-3009 exact)",
-    accepts: [requirements],
+    x402Version: X402_VERSION,
+    error:
+      error ?? "Payment required — USDC on Arc via Circle Facilitator Service (EIP-3009 exact)",
     resource: {
       url: `${url.origin}/api/paid`,
-      description: requirements.description,
+      description: RESOURCE_DESCRIPTION,
       mimeType: "application/json",
     },
+    accepts: [buildPaymentRequirements(cfg)],
   };
 }
 
-function encodePaymentRequiredHeader(body: unknown): string {
-  return Buffer.from(JSON.stringify(body), "utf8").toString("base64");
-}
-
-function getPaymentSignatureHeader(req: NextRequest): string | undefined {
-  return (
-    req.headers.get("payment-signature") ||
-    req.headers.get("PAYMENT-SIGNATURE") ||
-    req.headers.get("x-payment") ||
-    req.headers.get("X-PAYMENT") ||
-    undefined
+function respond402(
+  req: NextRequest,
+  cfg: AppConfig,
+  error?: string,
+  extra?: Record<string, unknown>,
+): NextResponse {
+  const body = paymentRequired(req, cfg, error);
+  return NextResponse.json(
+    { ...body, ...extra },
+    {
+      status: 402,
+      headers: {
+        "PAYMENT-REQUIRED": encodePaymentRequiredHeader(body),
+        "Cache-Control": "no-store",
+        "Access-Control-Expose-Headers": EXPOSE,
+      },
+    },
   );
 }
 
-function decodePaymentPayload(header: string): unknown {
-  // Prefer base64 JSON (x402 v2). Fall back to raw JSON string.
-  try {
-    const json = Buffer.from(header, "base64").toString("utf8");
-    return JSON.parse(json);
-  } catch {
-    return JSON.parse(header);
-  }
-}
-
-function unpaid402(req: NextRequest): NextResponse {
-  const body = paymentRequiredBody(req);
+function jsonError(status: number, body: Record<string, unknown>): NextResponse {
   return NextResponse.json(body, {
-    status: 402,
-    headers: {
-      "PAYMENT-REQUIRED": encodePaymentRequiredHeader(body),
-      "Cache-Control": "no-store",
-      "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE",
-    },
+    status,
+    headers: { "Cache-Control": "no-store" },
   });
 }
 
-function isDemoPaid(req: NextRequest): boolean {
-  const cfg = getConfig();
-  if (!cfg.allowDemoPaid) return false;
+function getPaymentSignatureHeader(req: NextRequest): string | undefined {
+  // Headers are case-insensitive. X-PAYMENT kept for x402 v1-style clients.
+  return req.headers.get("payment-signature") || req.headers.get("x-payment") || undefined;
+}
+
+function isDemoPaid(req: NextRequest, cfg: AppConfig): boolean {
+  if (!cfg.allowDemoPaid) return false; // ALLOW_DEMO_PAID=false → demo header is ignored → 402
   const h = req.headers.get("x-arc-door-demo");
   const q = new URL(req.url).searchParams.get("demo");
   return h === "paid" || q === "paid";
 }
 
+/** The buyer's `accepted` terms must be exactly what this door advertises. */
+function acceptedMismatch(
+  accepted: PaymentPayload["accepted"] | undefined,
+  req: PaymentRequirementsV2,
+): string | null {
+  if (!accepted) return "paymentPayload.accepted missing";
+  const eq = (a: unknown, b: unknown) => String(a ?? "").toLowerCase() === String(b).toLowerCase();
+  if (!eq(accepted.scheme, req.scheme)) return "scheme";
+  if (!eq(accepted.network, req.network)) return "network";
+  if (!eq(accepted.asset, req.asset)) return "asset";
+  if (!eq(accepted.payTo, req.payTo)) return "payTo";
+  if (String(accepted.amount) !== req.amount) return "amount";
+  const extra = (accepted.extra ?? {}) as Record<string, unknown>;
+  if (extra.name !== req.extra.name || extra.version !== req.extra.version) return "extra (EIP-712 domain)";
+  return null;
+}
+
 async function handlePaid(req: NextRequest): Promise<NextResponse> {
   const cfg = getConfig();
 
-  if (isDemoPaid(req)) {
+  if (isDemoPaid(req, cfg)) {
     const payload = buildEvidencePayload({
       networkLabel: cfg.networkLabel,
       networkCaip2: cfg.networkCaip2,
@@ -81,128 +113,152 @@ async function handlePaid(req: NextRequest): Promise<NextResponse> {
       amountAtomic: cfg.amountAtomic,
       asset: ARC_USDC,
       payTo: cfg.payTo,
-      transactionHash: null,
-      payer: null,
       demo: true,
     });
     return NextResponse.json(payload, {
       status: 200,
-      headers: { "Cache-Control": "no-store" },
+      headers: { "Cache-Control": "no-store", "X-Arc-Door-Mode": "demo" },
     });
   }
 
   const sig = getPaymentSignatureHeader(req);
-  if (!sig) {
-    return unpaid402(req);
-  }
+  if (!sig) return respond402(req, cfg);
 
-  if (!cfg.circleApiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "PAYMENT-SIGNATURE present but CIRCLE_API_KEY is not set. Facilitator Service requires Authorization: Bearer <key> (or Facilitator-Seller-Proof for keyless trial).",
-        nextSteps: [
-          "Copy .env.example → .env.local and set CIRCLE_API_KEY from Circle Console",
-          "Or implement buildSellerProof() in lib/circle-facilitator.ts (quickstart Step 2)",
-          "FACILITATOR_URL=" + cfg.facilitatorUrl,
-          "Docs: https://developers.circle.com/facilitator-service/quickstart",
-        ],
-        accepts: paymentRequiredBody(req).accepts,
-      },
-      { status: 401 },
-    );
-  }
-
-  let paymentPayload: unknown;
+  let paymentPayload: PaymentPayload;
   try {
-    paymentPayload = decodePaymentPayload(sig);
+    paymentPayload = decodePaymentSignatureHeader(sig);
   } catch {
-    return NextResponse.json(
-      { error: "Invalid PAYMENT-SIGNATURE (expected base64 JSON payment payload)" },
-      { status: 400 },
-    );
+    return jsonError(400, {
+      error: "Invalid PAYMENT-SIGNATURE (expected base64 JSON x402 v2 PaymentPayload)",
+    });
+  }
+  if (paymentPayload.x402Version !== X402_VERSION) {
+    return respond402(req, cfg, `Unsupported x402Version ${paymentPayload.x402Version}; this door speaks v2`);
+  }
+
+  if (!cfg.payToConfigured) {
+    return jsonError(503, {
+      error: "Seller not configured: PAY_TO is unset or the placeholder address. Refusing to settle.",
+    });
+  }
+
+  const auth = resolveFacilitatorAuth(cfg);
+  if (!auth) {
+    return jsonError(503, {
+      error:
+        "Facilitator auth not configured: set CIRCLE_API_KEY (Bearer) or SELLER_PRIVATE_KEY (keyless-trial seller proof).",
+      docs: "https://developers.circle.com/facilitator-service/keyless-trial",
+    });
+  }
+  try {
+    assertSellerKeyMatchesPayTo(auth);
+  } catch (e) {
+    return jsonError(503, { error: (e as Error).message });
   }
 
   const requirements = buildPaymentRequirements(cfg);
-  const settled = await settleWithCircle({
-    facilitatorUrl: cfg.facilitatorUrl,
-    circleApiKey: cfg.circleApiKey,
-    paymentPayload,
-    paymentRequirements: {
-      scheme: requirements.scheme,
-      network: requirements.network,
-      amount: requirements.amount,
-      asset: requirements.asset,
-      payTo: requirements.payTo,
-      maxTimeoutSeconds: requirements.maxTimeoutSeconds,
-      extra: requirements.extra,
-    },
-  });
-
-  const body = settled.body as Record<string, unknown> | null;
-  const success = Boolean(body && (body as { success?: boolean }).success);
-  const pending =
-    body &&
-    typeof body === "object" &&
-    (body as { extensions?: { "settlement-status"?: { status?: string } } })
-      .extensions?.["settlement-status"]?.status === "pending";
-
-  if (!settled.ok || (!success && !pending)) {
-    return NextResponse.json(
-      {
-        error: "Facilitator settle failed",
-        facilitatorStatus: settled.status,
-        facilitatorBody: body,
-      },
-      { status: 402 },
-    );
+  const mismatch = acceptedMismatch(paymentPayload.accepted, requirements);
+  if (mismatch) {
+    return respond402(req, cfg, `Payment terms mismatch: ${mismatch}`);
   }
 
-  // Do not fulfill on pending — Circle docs: poll /status until completed.
-  if (pending) {
-    return NextResponse.json(
-      {
-        error: "Settlement pending — do not fulfill yet; poll facilitator /status",
-        facilitatorBody: body,
-      },
-      { status: 202 },
-    );
+  // 1) /verify — no payment created, nothing onchain.
+  let verified;
+  try {
+    verified = await verifyWithCircle({
+      facilitatorUrl: cfg.facilitatorUrl,
+      auth,
+      paymentPayload,
+      paymentRequirements: requirements,
+    });
+  } catch (e) {
+    return jsonError(502, { error: "Facilitator /verify unreachable", detail: String(e) });
+  }
+  if (!verified.ok) {
+    return jsonError(502, {
+      error: "Facilitator /verify rejected the request",
+      facilitatorStatus: verified.status,
+      facilitatorBody: verified.body,
+    });
+  }
+  const vbody = verified.body as VerifyResponse;
+  if (!vbody?.isValid) {
+    return respond402(req, cfg, `Payment invalid: ${vbody?.invalidReason ?? "unknown"}`, {
+      verify: vbody,
+    });
   }
 
-  const tx =
-    typeof body?.transaction === "string" && body.transaction.length > 0
-      ? body.transaction
-      : null;
-  const payer = typeof body?.payer === "string" ? body.payer : null;
+  if (cfg.settleDisabled) {
+    return jsonError(503, {
+      error: "Verify passed but SETTLE_DISABLED=true — not settling, not fulfilling.",
+      verify: vbody,
+    });
+  }
 
+  // 2) /settle — the money path. Every settlement outcome is HTTP 200.
+  let settled;
+  try {
+    settled = await settleWithCircle({
+      facilitatorUrl: cfg.facilitatorUrl,
+      auth,
+      paymentPayload,
+      paymentRequirements: requirements,
+    });
+  } catch (e) {
+    return jsonError(502, { error: "Facilitator /settle unreachable", detail: String(e) });
+  }
+  if (!settled.ok) {
+    return jsonError(502, {
+      error: "Facilitator /settle rejected the request",
+      facilitatorStatus: settled.status,
+      facilitatorBody: settled.body,
+    });
+  }
+  const sbody = settled.body as SettleResponse;
+
+  // Do not fulfill on pending — Circle docs: reconcile via /status.
+  if (isSettlePending(sbody)) {
+    return jsonError(202, {
+      error: "Settlement pending — not fulfilled. Reconcile via facilitator /status.",
+      facilitatorBody: sbody,
+    });
+  }
+
+  const tx = typeof sbody?.transaction === "string" && sbody.transaction ? sbody.transaction : null;
+  if (!sbody?.success || !tx) {
+    return respond402(req, cfg, `Settlement failed: ${sbody?.errorReason ?? "unknown"}`, {
+      facilitatorBody: sbody,
+    });
+  }
+
+  const payer = sbody.payer ?? vbody.payer ?? null;
   const evidence = buildEvidencePayload({
     networkLabel: cfg.networkLabel,
     networkCaip2: cfg.networkCaip2,
     facilitatorUrl: cfg.facilitatorUrl,
-    amountAtomic: cfg.amountAtomic,
+    amountAtomic: sbody.amount ?? cfg.amountAtomic,
     asset: ARC_USDC,
     payTo: cfg.payTo,
     transactionHash: tx,
+    explorerLink: txExplorerLink(cfg, tx),
     payer,
+    facilitatorAuth: auth.mode,
+    verify: { isValid: true, payer: vbody.payer ?? null },
     demo: false,
   });
-
-  const paymentResponse = Buffer.from(
-    JSON.stringify({
-      success: true,
-      transaction: tx,
-      network: cfg.networkCaip2,
-      payer,
-    }),
-    "utf8",
-  ).toString("base64");
 
   return NextResponse.json(evidence, {
     status: 200,
     headers: {
       "Cache-Control": "no-store",
-      "PAYMENT-RESPONSE": paymentResponse,
-      "Access-Control-Expose-Headers": "PAYMENT-RESPONSE",
+      "X-Arc-Door-Mode": "settled",
+      "PAYMENT-RESPONSE": encodePaymentResponseHeader({
+        success: true,
+        transaction: tx,
+        network: cfg.networkCaip2,
+        payer: payer ?? undefined,
+      }),
+      "Access-Control-Expose-Headers": EXPOSE,
     },
   });
 }
@@ -222,8 +278,8 @@ export async function OPTIONS() {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers":
-        "Content-Type, PAYMENT-SIGNATURE, X-PAYMENT, X-Arc-Door-Demo, Authorization",
-      "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE",
+        "Content-Type, PAYMENT-SIGNATURE, X-PAYMENT, X-Arc-Door-Demo",
+      "Access-Control-Expose-Headers": EXPOSE,
     },
   });
 }
