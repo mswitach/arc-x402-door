@@ -19,7 +19,7 @@
 	],
 	"vars": {
 		"ALLOW_DEMO_PAID": "true",
-		"PAY_TO": "0x0000000000000000000000000000000000000001",
+		"PAY_TO": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
 		"NETWORK": "arc-mainnet",
 		"FACILITATOR_URL": "https://api.circle.com/v1/facilitator/x402",
 		"PRICE_USDC": "0.01"
