@@ -1,0 +1,32 @@
+{
+  "takenAtART": "2026-10-14T23:16:31-03:00",
+  "door": "https://arc-x402-door.mswitach.workers.dev/api/paid",
+  "buyer": "0x933C4b49ffe522879692CDc0f4868B6183Cc501c",
+  "requirement": {
+    "scheme": "exact",
+    "network": "eip155:5042",
+    "amount": "10000",
+    "asset": "0x3600000000000000000000000000000000000000",
+    "payTo": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+    "maxTimeoutSeconds": 60,
+    "extra": {
+      "name": "USDC",
+      "version": "2",
+      "assetTransferMethod": "eip3009"
+    }
+  },
+  "unpaidStatus": 402,
+  "paidStatus": 502,
+  "latencyMs": 306,
+  "paymentResponse": null,
+  "transaction": null,
+  "explorer": null,
+  "body": {
+    "error": "Facilitator /verify rejected the request",
+    "facilitatorStatus": 403,
+    "facilitatorBody": {
+      "code": 403,
+      "message": "forbidden"
+    }
+  }
+}

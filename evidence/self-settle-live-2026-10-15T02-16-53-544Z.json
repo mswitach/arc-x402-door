@@ -1,0 +1,14 @@
+{
+  "takenAtART": "2026-10-14T23:16:53-03:00",
+  "mode": "plan-b-self-settle",
+  "from": "0x933C4b49ffe522879692CDc0f4868B6183Cc501c",
+  "to": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+  "amountAtomic": "10000",
+  "submitter": "0x933C4b49ffe522879692CDc0f4868B6183Cc501c",
+  "transaction": "0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9",
+  "explorer": "https://explorer.arc.io/tx/0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9",
+  "status": "success",
+  "blockNumber": "26020217",
+  "gasUsed": "112145",
+  "effectiveGasPrice": "20000001153"
+}

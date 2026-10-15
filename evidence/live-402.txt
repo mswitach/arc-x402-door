@@ -1,0 +1,15 @@
+HTTP/2 402 
+date: Thu, 15 Oct 2026 02:16:28 GMT
+content-type: application/json
+cache-control: no-store
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+access-control-expose-headers: PAYMENT-REQUIRED, PAYMENT-RESPONSE
+payment-required: eyJ4NDAyVmVyc2lvbiI6MiwiZXJyb3IiOiJQYXltZW50IHJlcXVpcmVkIOKAlCBVU0RDIG9uIEFyYyB2aWEgQ2lyY2xlIEZhY2lsaXRhdG9yIFNlcnZpY2UgKEVJUC0zMDA5IGV4YWN0KSIsInJlc291cmNlIjp7InVybCI6Imh0dHBzOi8vYXJjLXg0MDItZG9vci5tc3dpdGFjaC53b3JrZXJzLmRldi9hcGkvcGFpZCIsImRlc2NyaXB0aW9uIjoiQXJjIE1pY3JvZ3JhbnQgZG9vcjogSlNPTiBldmlkZW5jZSB0aGF0IHg0MDIgc2V0dGxlbWVudCDiiaAgcHVycG9zZS9hZ2VudC1hdXRob3JpdHkgdmVyaWZpY2F0aW9uIiwibWltZVR5cGUiOiJhcHBsaWNhdGlvbi9qc29uIn0sImFjY2VwdHMiOlt7InNjaGVtZSI6ImV4YWN0IiwibmV0d29yayI6ImVpcDE1NTo1MDQyIiwiYW1vdW50IjoiMTAwMDAiLCJhc3NldCI6IjB4MzYwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCIsInBheVRvIjoiMHg1QjYxMzRDNUViRWM4MTBhMjI0MDI4NThDNjcwRDFjRTM0NDY5YzI4IiwibWF4VGltZW91dFNlY29uZHMiOjYwLCJleHRyYSI6eyJuYW1lIjoiVVNEQyIsInZlcnNpb24iOiIyIiwiYXNzZXRUcmFuc2Zlck1ldGhvZCI6ImVpcDMwMDkifX1dfQ==
+x-opennext: 1
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Xg7oXTPwui4Z5yxb3e6Dbme3OV3lJcMov%2FWTtgh59sg%2Bm2qs%2FvXMYdYBZ%2FI3ltC%2BAqye%2FOkgUxyHtvei8gcNaMeUn%2BYJmMmiMwpmJG6C%2Fu5V3ICq%2FmulqzUCNfGuonMzl9XyzYWQzeTX%2FnVtyyIMJGksdP1rB%2FEs6EjgGvdPJUHN"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a4ab5264dd9688f9-SEA
+alt-svc: h3=":443"; ma=86400
+
+{"x402Version":2,"error":"Payment required — USDC on Arc via Circle Facilitator Service (EIP-3009 exact)","resource":{"url":"https://arc-x402-door.mswitach.workers.dev/api/paid","description":"Arc Microgrant door: JSON evidence that x402 settlement ≠ purpose/agent-authority verification","mimeType":"application/json"},"accepts":[{"scheme":"exact","network":"eip155:5042","amount":"10000","asset":"0x3600000000000000000000000000000000000000","payTo":"0x5B6134C5EbEc810a22402858C670D1cE34469c28","maxTimeoutSeconds":60,"extra":{"name":"USDC","version":"2","assetTransferMethod":"eip3009"}}]}
