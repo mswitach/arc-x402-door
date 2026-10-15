@@ -20,20 +20,20 @@ This door charges real USDC on Arc Mainnet and returns that fact, with sources, 
 
 ---
 
-## 1. Live smoke result (facilitator path blocked, 403)
+## 1. Live smoke result ✅ (Circle Facilitator, HTTP 200 settled)
 
 | Item | Value |
 |---|---|
-| Smoke run at (ART) | `2026-10-14T23:16:31-03:00` |
+| Smoke run at (ART) | `2026-10-14T23:21:47-03:00` |
 | Command | `npm run smoke:live` |
 | Unpaid status | ✅ `402` (see `evidence/live-402.txt`) |
-| Paid status | ❌ `502`: door got Circle `/verify` → `403 {"code":403,"message":"forbidden"}` |
-| Latency (paid request incl. verify + settle) | 306 ms |
-| Facilitator auth mode | api-key (403) and seller-proof (403) |
-| **Transaction hash** | none via facilitator, see Plan B |
-| **Explorer link** | see Plan B |
-| Payer (from facilitator) | n/a |
-| Raw output | `evidence/smoke-live-2026-10-15T02-16-31-944Z.json`, `evidence/smoke-live-2026-10-15T02-17-20-864Z.json` |
+| Paid status | ✅ `200` (`/verify` isValid true, `/settle` success true). Earlier attempts at 23:16 got `403 forbidden` before the Circle Console setup was completed |
+| Latency (paid request incl. verify + settle) | 3711 ms |
+| Facilitator auth mode | api-key |
+| **Transaction hash** | `0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d` |
+| **Explorer link** | https://explorer.arc.io/tx/0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d |
+| Payer (from facilitator) | `0x933c4b49ffe522879692cdc0f4868b6183cc501c` |
+| Raw output | `evidence/smoke-live-2026-10-15T02-21-47-800Z.json` · `evidence/live-200-smoke.txt` (earlier 403 runs: `evidence/smoke-live-2026-10-15T02-16-31-944Z.json`, `evidence/smoke-live-2026-10-15T02-17-20-864Z.json`) |
 
 ### Screenshots ⏳
 
@@ -41,7 +41,7 @@ This door charges real USDC on Arc Mainnet and returns that fact, with sources, 
 - `⏳ evidence/200.png` — smoke output showing `HTTP 200`, `settlement.transactionHash`, `settlement.explorerLink`
 - `⏳ evidence/explorer.png` — Arc explorer page for the tx (from buyer → payTo, 0.01 USDC)
 
-### Plan B (used: facilitator path blocked) ✅
+### Plan B (secondary evidence, run while the facilitator returned 403) ✅
 
 `npm run self-settle:live` — buyer submits `transferWithAuthorization` directly on Arc (no facilitator).
 Tx hash `0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9` · explorer https://explorer.arc.io/tx/0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9 · status success, block 26020217, 0.01 USDC 0x933C…501c → 0x5B61…9c28 · raw `evidence/self-settle-live-2026-10-15T02-16-53-544Z.json`.

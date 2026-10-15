@@ -25,14 +25,15 @@ The point: a valid signature plus a final settle on Arc says the money moved. It
 
 Built with Next.js 15, `@x402/core`, `@x402/evm`, viem. Deployed on Cloudflare Workers. Includes a buyer smoke script (dry run by default, `--live` to pay) and a Plan B that settles the same authorization directly on Arc without the facilitator.
 
-Status at submission (2026-10-14 23:17 ART): the live door returns the real 402 with Arc Mainnet requirements. Circle `/verify` currently answers `403 forbidden` for this account (Console setup still pending), so the evidence tx was settled with the Plan B: the same buyer-signed EIP-3009 authorization submitted directly to Arc USDC. It proves real USDC settlement on Arc, not yet the facilitator path. Once the account is enabled the door settles through Circle with no code change.
+Status at submission (2026-10-14 23:21 ART): live end to end. An unpaid GET returns the real 402 with Arc Mainnet requirements. A paid GET returned HTTP 200 after Circle `/verify` (isValid true) and `/settle` (success true), settling 0.01 USDC on Arc Mainnet through the Circle Facilitator Service. An earlier Plan B tx (same EIP-3009 authorization submitted directly to Arc USDC, while the Circle account setup was pending) is kept as secondary evidence.
 
 ## Links
 
 - Live demo: https://arc-x402-door.mswitach.workers.dev/api/paid
 - Repo: https://github.com/mswitach/arc-x402-door
 - Evidence pack: https://github.com/mswitach/arc-x402-door/blob/main/EVIDENCE.md
-- Arc tx (0.01 USDC, buyer to payTo, Arc Mainnet block 26020217): https://explorer.arc.io/tx/0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9
+- Arc tx via Circle Facilitator (0.01 USDC, HTTP 200 settled): https://explorer.arc.io/tx/0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d
+- Secondary, Plan B direct settle (block 26020217): https://explorer.arc.io/tx/0x86e7d266242b7822e5780dd6a9e61cf24a1db8190e852e49da71fbd83bc70fc9
 - Builder GitHub: https://github.com/mswitach
 - X: https://x.com/ai_evolve_all (@ai_evolve_all)
 
@@ -46,7 +47,7 @@ Status at submission (2026-10-14 23:17 ART): the live door returns the real 402 
 
 ## Pre-submit checklist
 
-- [x] Live smoke done (Plan B tx, facilitator 403), tx hash + explorer link pasted above and in EVIDENCE.md
+- [x] Live smoke done (facilitator 200 settled, Plan B secondary), tx hash + explorer link pasted above and in EVIDENCE.md
 - [x] Live door redeployed with `ALLOW_DEMO_PAID=false` (demo header returns 402)
 - [ ] 402 + 200 + explorer screenshots attached
 - [x] Public copy check: no `¿` and no `;` in Spanish text

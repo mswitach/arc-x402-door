@@ -1,0 +1,100 @@
+arc-x402-door smoke · 2026-10-14T23:21:43-03:00 ART · mode=LIVE
+door: https://arc-x402-door.mswitach.workers.dev/api/paid
+buyer: 0x933C4b49ffe522879692CDc0f4868B6183Cc501c
+
+[1] GET (no payment) → HTTP 402
+    PAYMENT-REQUIRED header decoded ✓
+
+[2] payment requirements
+    ✓ network eip155:5042 = eip155:5042
+    ✓ asset 0x3600000000000000000000000000000000000000 = USDC 0x3600…
+    ✓ amount 10000 atomic (6 decimals) ≤ max 10000
+    ✓ extra.name "USDC" = "USDC"
+    ✓ extra.version "2" = "2"
+    ✓ payTo 0x5B6134C5EbEc810a22402858C670D1cE34469c28 is not the placeholder
+
+[3] EIP-3009 authorization signed by buyer — local signature check: ✓ valid
+    {
+      "x402Version": 2,
+      "payload": {
+        "authorization": {
+          "from": "0x933C4b49ffe522879692CDc0f4868B6183Cc501c",
+          "to": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+          "value": "10000",
+          "validAfter": "0",
+          "validBefore": "1792030963",
+          "nonce": "0xece747ce55725f3007574ea7afae2fb0a0115329b0424fd1cd6d80c388e795f4"
+        },
+        "signature": "0xd2bff9fc…3bc01b (truncated)"
+      },
+      "resource": {
+        "url": "https://arc-x402-door.mswitach.workers.dev/api/paid",
+        "description": "Arc Microgrant door: JSON evidence that x402 settlement ≠ purpose/agent-authority verification",
+        "mimeType": "application/json"
+      },
+      "accepted": {
+        "scheme": "exact",
+        "network": "eip155:5042",
+        "amount": "10000",
+        "asset": "0x3600000000000000000000000000000000000000",
+        "payTo": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+        "maxTimeoutSeconds": 60,
+        "extra": {
+          "name": "USDC",
+          "version": "2",
+          "assetTransferMethod": "eip3009"
+        }
+      }
+    }
+    PAYMENT-SIGNATURE header ready (1228 chars base64, not printed)
+
+[4] buyer balance on Arc Mainnet: 4.967757 USDC (ERC-20, 6 dp) · native 4.967757099870696815 · ✓ enough
+
+[6] LIVE: GET with PAYMENT-SIGNATURE (amount 10000 atomic → 0x5B6134C5EbEc810a22402858C670D1cE34469c28)
+    HTTP 200 in 3711 ms
+    PAYMENT-RESPONSE: {"success":true,"transaction":"0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d","network":"eip155:5042","payer":"0x933c4b49ffe522879692cdc0f4868b6183cc501c"}
+    body: {
+      "claim": "settle ≠ consent / purpose / agent authority — Circle Facilitator Service settles EIP-3009 USDC authorizations; it does not verify transaction purpose or confirm agent authority scope.",
+      "evidence": [
+        {
+          "fuente": "https://developers.circle.com/facilitator-service",
+          "fecha": "2026-09-17",
+          "quote": "Facilitator Service verifies buyer-signed EIP-3009 USDC payment authorizations under the x402 protocol only — it does not hold, control, or transmit user funds, verify transaction purpose, or confirm agent authority scope. On Base and Polygon, settlements are subject to blockchain reorganization risk; Circle does not guarantee fund receipt. Arc settlements are final."
+        },
+        {
+          "fuente": "https://x.com/402Signal/status/2100545270157025304",
+          "fecha": "2026-09-17 (created_at 2026-09-17T11:19:53Z / 08:19:53 ART)",
+          "quote": "Circle just made Arc a real x402 rail, not a future roadmap item. Arc mainnet is live, and Circle’s hosted x402 facilitator now settles USDC across Arc, Base and Polygon. One detail matters: Circle says the facilitator doesn’t verify transaction purpose or agent authority scope. So settlement is getting easier. The independent “should this buyer sign this exact deal?” check is still a separate job."
+        }
+      ],
+      "settlement": {
+        "network": "Arc Mainnet",
+        "networkCaip2": "eip155:5042",
+        "scheme": "exact / EIP-3009",
+        "facilitator": "Circle hosted Facilitator Service",
+        "facilitatorUrl": "https://api.circle.com/v1/facilitator/x402",
+        "transactionHash": "0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d",
+        "explorerLink": "https://explorer.arc.io/tx/0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d",
+        "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c",
+        "facilitatorAuth": "api-key",
+        "verify": {
+          "isValid": true,
+          "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c"
+        },
+        "amountAtomic": "10000",
+        "asset": "0x3600000000000000000000000000000000000000",
+        "payTo": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+        "settledAt": "2026-10-15T02:21:47.743Z",
+        "note": "USDC moved on Arc: Circle Facilitator Service verified the buyer's EIP-3009 signature and settled it. Nothing in this flow checked why the buyer paid or whether the signing agent was authorized to. Settlement ≠ consent."
+      },
+      "meta": {
+        "endpoint": "/api/paid",
+        "x402Version": 2,
+        "generatedAt": "2026-10-15T02:21:47.743Z",
+        "demo": false
+      }
+    }
+
+    tx: 0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d
+    explorer: https://explorer.arc.io/tx/0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d
+    saved evidence/smoke-live-2026-10-15T02-21-47-800Z.json
