@@ -29,8 +29,10 @@ import {
   toHex,
   type Address,
 } from "viem";
+import type { PaymentReceiptV2 } from "../lib/receipt";
 import {
   ARC_EXPLORER,
+  ARC_MAINNET_CAIP2,
   ARC_MAINNET_CHAIN_ID,
   ARC_RPC,
   ARC_USDC,
@@ -187,6 +189,23 @@ async function main() {
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   console.log(`    status ${receipt.status} · block ${receipt.blockNumber} · ${Date.now() - t0} ms to receipt`);
 
+  const receiptV2: PaymentReceiptV2 = {
+    version: 2,
+    network: ARC_MAINNET_CAIP2,
+    chainId: ARC_MAINNET_CHAIN_ID,
+    resourceUrl: "plan-b:self-settle",
+    payer: buyer.address.toLowerCase(),
+    payTo: to.toLowerCase(),
+    asset: ARC_USDC.toLowerCase(),
+    amount: amount.toString(),
+    issuedAt: Math.floor(Date.now() / 1000),
+    transaction: hash.toLowerCase(),
+    authorizationMethod: "",
+    authorizationCommitment: "",
+    read_at: { number: Number(receipt.blockNumber), hash: receipt.blockHash.toLowerCase() },
+  };
+  console.log(`    receipt v2 read_at: ${JSON.stringify(receiptV2.read_at)}`);
+
   mkdirSync("evidence", { recursive: true });
   const out = `evidence/self-settle-live-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   writeFileSync(
@@ -205,6 +224,7 @@ async function main() {
         blockNumber: receipt.blockNumber,
         gasUsed: receipt.gasUsed,
         effectiveGasPrice: receipt.effectiveGasPrice,
+        receipt: receiptV2,
       },
       bigintReplacer,
       2,

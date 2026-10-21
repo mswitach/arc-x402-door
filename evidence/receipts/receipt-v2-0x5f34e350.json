@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "network": "eip155:5042",
+  "chainId": 5042,
+  "resourceUrl": "https://arc-x402-door.mswitach.workers.dev/api/paid",
+  "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c",
+  "payTo": "0x5b6134c5ebec810a22402858c670d1ce34469c28",
+  "asset": "0x3600000000000000000000000000000000000000",
+  "amount": "10000",
+  "issuedAt": 1792030905,
+  "transaction": "0x5f34e35062b2a1dd384476b6b9df695adc687f145f520445f1e1345110e01f8d",
+  "authorizationMethod": "",
+  "authorizationCommitment": "",
+  "read_at": {
+    "number": 26020802,
+    "hash": "0xc37109c29f118ab1b73fbea94fd53993e8d6cc93c7181c153fe3a9f29b80067d"
+  }
+}

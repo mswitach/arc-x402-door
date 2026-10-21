@@ -28,6 +28,7 @@ import {
 import type { PaymentPayload, PaymentRequired, PaymentRequirements } from "@x402/core/types";
 import { registerExactEvmScheme } from "@x402/evm/exact/client";
 import { buildSellerProof } from "../lib/circle-facilitator";
+import { buildReceiptV2, type PaymentReceiptV2 } from "../lib/receipt";
 import {
   ARC_EXPLORER,
   ARC_MAINNET_CAIP2,
@@ -224,6 +225,27 @@ async function main() {
     console.log("\n(local rehearsal — no evidence file written)");
     return;
   }
+  // Receipt v2: prefer the one the door returned; otherwise build it here from the chain.
+  let receipt: PaymentReceiptV2 | null =
+    (json as { settlement?: { receipt?: PaymentReceiptV2 | null } })?.settlement?.receipt ?? null;
+  if (!receipt && tx && r2.status === 200) {
+    try {
+      receipt = await buildReceiptV2({
+        network: ARC_MAINNET_CAIP2,
+        chainId: ARC_MAINNET_CHAIN_ID,
+        resourceUrl: url,
+        payer: buyer.address,
+        payTo: req.payTo,
+        asset: req.asset,
+        amount: req.amount,
+        transaction: tx,
+      });
+    } catch (e) {
+      console.log(`    receipt v2: ✖ ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  if (receipt) console.log(`    receipt v2 read_at: ${JSON.stringify(receipt.read_at)} (${receipt.network})`);
+
   mkdirSync("evidence", { recursive: true });
   const out = `evidence/smoke-live-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
   writeFileSync(
@@ -240,6 +262,7 @@ async function main() {
         paymentResponse,
         transaction: tx,
         explorer: tx ? `${ARC_EXPLORER}/tx/${tx}` : null,
+        receipt,
         body: json,
       },
       bigintReplacer,

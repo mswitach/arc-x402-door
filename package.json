@@ -18,7 +18,9 @@
     "smoke:preflight": "tsx scripts/smoke-pay.ts --preflight",
     "smoke:live": "tsx scripts/smoke-pay.ts --live",
     "self-settle": "tsx scripts/self-settle.ts",
-    "self-settle:live": "tsx scripts/self-settle.ts --live"
+    "self-settle:live": "tsx scripts/self-settle.ts --live",
+    "receipt:build": "tsx scripts/build-receipt.ts",
+    "receipt:verify": "tsx scripts/verify-receipt.ts"
   },
   "engines": {
     "node": ">=20.19.0"

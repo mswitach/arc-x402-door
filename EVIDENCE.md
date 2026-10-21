@@ -35,6 +35,14 @@ This door charges real USDC on Arc Mainnet and returns that fact, with sources, 
 | Payer (from facilitator) | `0x933c4b49ffe522879692cdc0f4868b6183cc501c` |
 | Raw output | `evidence/smoke-live-2026-10-15T02-21-47-800Z.json` · `evidence/live-200-smoke.txt` (earlier 403 runs: `evidence/smoke-live-2026-10-15T02-16-31-944Z.json`, `evidence/smoke-live-2026-10-15T02-17-20-864Z.json`) |
 
+### Receipt v2 for the settle ✅
+
+`read_at` = block **26020802**, hash `0xc37109c29f118ab1b73fbea94fd53993e8d6cc93c7181c153fe3a9f29b80067d`
+(2026-10-14T23:21:45-03:00 ART), network `eip155:5042`. Receipt:
+[`evidence/receipts/receipt-v2-0x5f34e350.json`](evidence/receipts/receipt-v2-0x5f34e350.json).
+`npm run receipt:verify` on it returns `result: ok` (block hash matches, tx in block, USDC
+`Transfer(0x933c…501c → 0x5b61…9c28, 10000)` at logIndex 4). Details are in [docs/RECEIPT-V2.md](docs/RECEIPT-V2.md).
+
 ### Screenshots ⏳
 
 - `⏳ evidence/402.png` — `curl -i https://arc-x402-door.mswitach.workers.dev/api/paid` showing `HTTP/2 402` + `payment-required` header
