@@ -1,0 +1,70 @@
+{
+  "takenAtART": "2026-10-23T10:35:40-03:00",
+  "door": "https://arc-x402-door.mswitach.workers.dev/api/paid",
+  "buyer": "0x933C4b49ffe522879692CDc0f4868B6183Cc501c",
+  "requirement": {
+    "scheme": "exact",
+    "network": "eip155:5042",
+    "amount": "10000",
+    "asset": "0x3600000000000000000000000000000000000000",
+    "payTo": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+    "maxTimeoutSeconds": 60,
+    "extra": {
+      "name": "USDC",
+      "version": "2",
+      "assetTransferMethod": "eip3009"
+    }
+  },
+  "unpaidStatus": 402,
+  "paidStatus": 200,
+  "latencyMs": 2724,
+  "paymentResponse": {
+    "success": true,
+    "transaction": "0xf99cbea9ad7ca560d8b3e0921010439636f76fea933e71b536bbaa833f9d5938",
+    "network": "eip155:5042",
+    "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c"
+  },
+  "transaction": "0xf99cbea9ad7ca560d8b3e0921010439636f76fea933e71b536bbaa833f9d5938",
+  "explorer": "https://explorer.arc.io/tx/0xf99cbea9ad7ca560d8b3e0921010439636f76fea933e71b536bbaa833f9d5938",
+  "body": {
+    "claim": "settle ≠ consent / purpose / agent authority — Circle Facilitator Service settles EIP-3009 USDC authorizations; it does not verify transaction purpose or confirm agent authority scope.",
+    "evidence": [
+      {
+        "fuente": "https://developers.circle.com/facilitator-service",
+        "fecha": "2026-09-17",
+        "quote": "Facilitator Service verifies buyer-signed EIP-3009 USDC payment authorizations under the x402 protocol only — it does not hold, control, or transmit user funds, verify transaction purpose, or confirm agent authority scope. On Base and Polygon, settlements are subject to blockchain reorganization risk; Circle does not guarantee fund receipt. Arc settlements are final."
+      },
+      {
+        "fuente": "https://x.com/402Signal/status/2100545270157025304",
+        "fecha": "2026-09-17 (created_at 2026-09-17T11:19:53Z / 08:19:53 ART)",
+        "quote": "Circle just made Arc a real x402 rail, not a future roadmap item. Arc mainnet is live, and Circle’s hosted x402 facilitator now settles USDC across Arc, Base and Polygon. One detail matters: Circle says the facilitator doesn’t verify transaction purpose or agent authority scope. So settlement is getting easier. The independent “should this buyer sign this exact deal?” check is still a separate job."
+      }
+    ],
+    "settlement": {
+      "network": "Arc Mainnet",
+      "networkCaip2": "eip155:5042",
+      "scheme": "exact / EIP-3009",
+      "facilitator": "Circle hosted Facilitator Service",
+      "facilitatorUrl": "https://api.circle.com/v1/facilitator/x402",
+      "transactionHash": "0xf99cbea9ad7ca560d8b3e0921010439636f76fea933e71b536bbaa833f9d5938",
+      "explorerLink": "https://explorer.arc.io/tx/0xf99cbea9ad7ca560d8b3e0921010439636f76fea933e71b536bbaa833f9d5938",
+      "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c",
+      "facilitatorAuth": "api-key",
+      "verify": {
+        "isValid": true,
+        "payer": "0x933c4b49ffe522879692cdc0f4868b6183cc501c"
+      },
+      "amountAtomic": "10000",
+      "asset": "0x3600000000000000000000000000000000000000",
+      "payTo": "0x5B6134C5EbEc810a22402858C670D1cE34469c28",
+      "settledAt": "2026-10-23T13:35:40.591Z",
+      "note": "USDC moved on Arc: Circle Facilitator Service verified the buyer's EIP-3009 signature and settled it. Nothing in this flow checked why the buyer paid or whether the signing agent was authorized to. Settlement ≠ consent."
+    },
+    "meta": {
+      "endpoint": "/api/paid",
+      "x402Version": 2,
+      "generatedAt": "2026-10-23T13:35:40.591Z",
+      "demo": false
+    }
+  }
+}
