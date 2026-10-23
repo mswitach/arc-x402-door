@@ -9,6 +9,7 @@
  */
 
 import { parseUnits } from "viem";
+import { DEFAULT_RPC } from "./receipt";
 
 export const ARC_MAINNET_CAIP2 = "eip155:5042" as const;
 export const ARC_TESTNET_CAIP2 = "eip155:5042002" as const;
@@ -52,6 +53,8 @@ export type AppConfig = {
   /** Safety switch: run /verify but never /settle (staging / rehearsal). */
   settleDisabled: boolean;
   explorerUrl: string;
+  /** JSON-RPC used to read the settlement block for the receipt v2 locator. */
+  rpcUrl: string;
 };
 
 /** Decimal-string → atomic units without float drift (viem parseUnits). */
@@ -112,6 +115,7 @@ export function getConfig(): AppConfig {
     allowDemoPaid: process.env.ALLOW_DEMO_PAID?.trim().toLowerCase() === "true",
     settleDisabled: process.env.SETTLE_DISABLED?.trim().toLowerCase() === "true",
     explorerUrl: EXPLORERS[net.networkCaip2],
+    rpcUrl: process.env.ARC_RPC_URL?.trim() || DEFAULT_RPC[net.networkCaip2],
   };
 }
 

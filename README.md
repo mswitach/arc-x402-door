@@ -103,6 +103,17 @@ paying gas in USDC (≥ 20 gwei `maxFeePerGas`).
 See [EVIDENCE.md](EVIDENCE.md) for the 402/200 captures, tx hash, explorer link, sources with dates,
 and the pre-funding rehearsal log. DoraHacks copy: [docs/DORAHACKS.md](docs/DORAHACKS.md).
 
+## Receipt v2 (`read_at`)
+
+After a settle, the paid JSON carries `settlement.receipt`: the tx hash, `read_at: {number, hash}` of the settlement
+block, and `network: "eip155:5042"` / `chainId: 5042`. Anyone can verify it by going straight to that block, with
+no `getLogs` range, and a changed block hash reads as a reorg, not a wrong answer. Format, sources and a real
+example are in [docs/RECEIPT-V2.md](docs/RECEIPT-V2.md).
+
+```bash
+npm run receipt:verify -- evidence/receipts/receipt-v2-0x5f34e350.json   # → result: ok
+```
+
 ## Scope
 
 Out of scope here: purpose binding / agent-authority policy (that is the point), Base / Base Sepolia.

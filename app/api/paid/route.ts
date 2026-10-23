@@ -16,6 +16,7 @@ import {
   type PaymentRequirementsV2,
 } from "@/lib/config";
 import { buildEvidencePayload } from "@/lib/evidence";
+import { buildReceiptV2, type PaymentReceiptV2 } from "@/lib/receipt";
 import {
   assertSellerKeyMatchesPayTo,
   isSettlePending,
@@ -232,14 +233,42 @@ async function handlePaid(req: NextRequest): Promise<NextResponse> {
   }
 
   const payer = sbody.payer ?? vbody.payer ?? null;
+  const amount = sbody.amount ?? cfg.amountAtomic;
+
+  // Receipt v2: read the settlement block (number + hash) so a verifier can go straight to it.
+  // Best effort: the payment already settled, so an RPC hiccup must not turn into a non-delivery.
+  let receipt: PaymentReceiptV2 | null = null;
+  let receiptError: string | undefined;
+  if (payer) {
+    try {
+      receipt = await buildReceiptV2({
+        rpcUrl: cfg.rpcUrl,
+        network: cfg.networkCaip2,
+        chainId: cfg.chainId,
+        resourceUrl: `${new URL(req.url).origin}/api/paid`,
+        payer,
+        payTo: cfg.payTo,
+        asset: ARC_USDC,
+        amount,
+        transaction: tx,
+      });
+    } catch (e) {
+      receiptError = e instanceof Error ? e.message : String(e);
+    }
+  } else {
+    receiptError = "facilitator returned no payer";
+  }
+
   const evidence = buildEvidencePayload({
     networkLabel: cfg.networkLabel,
     networkCaip2: cfg.networkCaip2,
     facilitatorUrl: cfg.facilitatorUrl,
-    amountAtomic: sbody.amount ?? cfg.amountAtomic,
+    amountAtomic: amount,
     asset: ARC_USDC,
     payTo: cfg.payTo,
     transactionHash: tx,
+    receipt,
+    receiptError,
     explorerLink: txExplorerLink(cfg, tx),
     payer,
     facilitatorAuth: auth.mode,

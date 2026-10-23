@@ -1,3 +1,5 @@
+import type { PaymentReceiptV2 } from "./receipt";
+
 /**
  * Paid response payload — the microgrant claim + citations.
  * Settlement proves USDC moved; it does NOT prove purpose or agent authority.
@@ -28,6 +30,12 @@ export type SettlementEvidence = {
   asset: string;
   payTo: string;
   settledAt: string | null;
+  /**
+   * Receipt v2 (see lib/receipt.ts): tx hash + read_at {number, hash} of the settlement block + CAIP-2 network
+   * + chainId. Null in demo mode, or when the RPC did not return the tx receipt in time (receiptError says why).
+   */
+  receipt: PaymentReceiptV2 | null;
+  receiptError?: string;
   note: string;
 };
 
@@ -40,6 +48,8 @@ export type PaidEvidenceResponse = {
     x402Version: number;
     generatedAt: string;
     demo: boolean;
+    /** 2 = settlement.receipt present (additive; every v1 field is unchanged). */
+    receiptVersion: number;
   };
 };
 
@@ -61,6 +71,8 @@ export function buildEvidencePayload(args: {
   payer?: string | null;
   facilitatorAuth?: string | null;
   verify?: { isValid: boolean; payer: string | null } | null;
+  receipt?: PaymentReceiptV2 | null;
+  receiptError?: string;
   demo?: boolean;
 }): PaidEvidenceResponse {
   const now = new Date();
@@ -95,6 +107,8 @@ export function buildEvidencePayload(args: {
       asset: args.asset,
       payTo: args.payTo,
       settledAt: args.demo ? null : args.transactionHash ? now.toISOString() : null,
+      receipt: args.demo ? null : (args.receipt ?? null),
+      ...(args.receiptError && !args.demo ? { receiptError: args.receiptError } : {}),
       note: args.demo
         ? "DEMO ONLY (ALLOW_DEMO_PAID=true): paid JSON shape without any on-chain settle. Not evidence of payment."
         : args.transactionHash
@@ -106,6 +120,7 @@ export function buildEvidencePayload(args: {
       x402Version: 2,
       generatedAt: now.toISOString(),
       demo: Boolean(args.demo),
+      receiptVersion: 2,
     },
   };
 }
